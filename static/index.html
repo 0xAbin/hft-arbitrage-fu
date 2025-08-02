@@ -456,15 +456,51 @@
             color: #000;
         }
 
+        .pagination {
+            padding: 6px 12px;
+            background: #2a2a2a;
+            border-top: 1px solid #00cc99;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .pagination button {
+            background: #2a2a2a;
+            border: 1px solid #00cc99;
+            color: #e0e0e0;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .pagination button:disabled {
+            color: #808080;
+            border-color: #404040;
+            cursor: not-allowed;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #00cc99;
+            color: #000;
+        }
+
+        .pagination span {
+            color: #a0a0a0;
+        }
+
         .spreads-matrix {
             display: grid;
             grid-template-columns: 50px repeat(6, 1fr);
             gap: 1px;
             font-size: 11px;
             width: 100%;
-            min-height: 200px; /* Increased height for better visibility */
-            overflow-x: auto; /* Horizontal scrolling */
-            overflow-y: auto; /* Vertical scrolling if needed */
+            min-height: 200px;
+            overflow-x: auto;
+            overflow-y: auto;
             padding: 5px;
             background: #2e2e2e;
             border-radius: 3px;
@@ -496,7 +532,7 @@
             text-align: center;
             border-radius: 3px;
             transition: background 0.3s;
-            white-space: nowrap; /* Prevent text wrapping */
+            white-space: nowrap;
         }
 
         .spread-cell.positive {
@@ -546,7 +582,7 @@
 
         .uplot {
             background: transparent !important;
-            height: 100% !important; /* Ensure chart fills container */
+            height: 100% !important;
         }
 
         .u-legend {
@@ -646,6 +682,36 @@
         .scrollbar::-webkit-scrollbar-thumb:hover {
             background: #00ffcc;
         }
+
+        .portfolio {
+            margin: 8px;
+            background: #222222;
+            border: 1px solid #00cc99;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0, 204, 153, 0.1);
+            padding: 12px;
+        }
+
+        .portfolio-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid #00cc99;
+            font-weight: 600;
+            color: #00ffcc;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .portfolio-content {
+            padding: 12px;
+            text-align: center;
+        }
+
+        .portfolio-value {
+            font-size: 16px;
+            color: #00ff99;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -725,7 +791,7 @@
                             </tr>
                         </thead>
                     </table>
-                    <div class="opportunities-table-body scrollbar">
+                    <div class="opportunities-table-body scrollbar" id="opportunitiesTableBodyContainer">
                         <table class="opportunities-table">
                             <tbody id="opportunitiesTableBody">
                                 <tr>
@@ -734,6 +800,18 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+                <div class="pagination">
+                    <button id="prevPage" disabled>Previous</button>
+                    <span id="pageInfo">Page 1</span>
+                    <button id="nextPage">Next</button>
+                </div>
+            </div>
+
+            <div class="portfolio">
+                <div class="portfolio-header">Portfolio</div>
+                <div class="portfolio-content">
+                    <div>Total PnL: <span id="totalPnl" class="portfolio-value">$0.00</span></div>
                 </div>
             </div>
         </div>

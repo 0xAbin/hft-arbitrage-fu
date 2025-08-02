@@ -24,6 +24,10 @@ class FuturesArbitrageScanner {
         this.lastChartUpdate = 0;
         this.chartUpdateThrottle = 100; // ms
         
+        this.currentPage = 1;
+        this.itemsPerPage = 10;
+        this.totalPnl = 0; // Portfolio PnL tracking
+
         this.init();
     }
 
@@ -77,7 +81,25 @@ class FuturesArbitrageScanner {
         const clearButton = document.getElementById('clearOpportunities');
         clearButton.addEventListener('click', () => {
             this.arbitrageOpportunities = [];
+            this.totalPnl = 0; // Reset PnL on clear
+            document.getElementById('totalPnl').textContent = `$${this.totalPnl.toFixed(2)}`;
             this.updateOpportunitiesTable();
+        });
+
+        // Pagination event listeners
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.updateOpportunitiesTable();
+            }
+        });
+
+        document.getElementById('nextPage').addEventListener('click', () => {
+            const totalPages = Math.ceil(this.arbitrageOpportunities.filter(opp => opp.profit_pct >= this.minProfitFilter).length / this.itemsPerPage);
+            if (this.currentPage < totalPages) {
+                this.currentPage++;
+                this.updateOpportunitiesTable();
+            }
         });
     }
 
@@ -88,7 +110,6 @@ class FuturesArbitrageScanner {
         const now = Date.now() / 1000;
         this.chartData = [
             [now - 60, now],
-            [null, null],
             [null, null],
             [null, null],
             [null, null],
@@ -242,7 +263,6 @@ class FuturesArbitrageScanner {
         this.updateChartTitle();
     }
 
-
     getChartWidth() {
         const chartContainer = document.getElementById('chart');
         return chartContainer ? Math.max(chartContainer.clientWidth - 40, 400) : 800;
@@ -255,7 +275,6 @@ class FuturesArbitrageScanner {
         const containerHeight = chartContainer.clientHeight;
         return Math.max(containerHeight - 40, 300);
     }
-
 
     connectWebSocket() {
         const wsStatus = document.getElementById('wsStatus');
@@ -376,21 +395,6 @@ class FuturesArbitrageScanner {
 
         this.connectedExchanges.add(exchange);
         this.updateExchangeTooltip();
-    }
-
-    addPriceToHistory(exchange, price, timestamp = null) {
-        const ts = timestamp ? timestamp / 1000 : Date.now() / 1000;
-        
-        if (!this.priceHistory.has(exchange)) {
-            this.priceHistory.set(exchange, []);
-        }
-
-        const history = this.priceHistory.get(exchange);
-        history.push([ts, price]);
-
-        if (history.length > this.maxHistoryPoints) {
-            history.shift();
-        }
     }
 
     updateExchangeList() {
@@ -571,6 +575,11 @@ class FuturesArbitrageScanner {
         
         this.arbitrageOpportunities.unshift(opportunity);
         
+        // Update total PnL
+        const profitAmount = (opportunity.sell_price - opportunity.buy_price) * (opportunity.quantity || 1); // Simplified PnL calculation
+        this.totalPnl += profitAmount;
+        document.getElementById('totalPnl').textContent = `$${this.totalPnl.toFixed(2)}`;
+
         if (this.arbitrageOpportunities.length > this.maxOpportunities) {
             this.arbitrageOpportunities = this.arbitrageOpportunities.slice(0, this.maxOpportunities);
         }
@@ -581,7 +590,10 @@ class FuturesArbitrageScanner {
     updateOpportunitiesTable() {
         const tbody = document.getElementById('opportunitiesTableBody');
         const stats = document.getElementById('opportunitiesStats');
-        
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const pageInfo = document.getElementById('pageInfo');
+
         // Filter opportunities
         const filteredOpportunities = this.arbitrageOpportunities.filter(opp =>
             opp.profit_pct >= this.minProfitFilter
@@ -608,17 +620,26 @@ class FuturesArbitrageScanner {
             }
         });
 
+        // Pagination
+        const totalPages = Math.ceil(filteredOpportunities.length / this.itemsPerPage);
+        const start = (this.currentPage - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        const paginatedOpportunities = sortedOpportunities.slice(start, end);
+
         // Update stats
         stats.textContent = `${filteredOpportunities.length} alerts`;
 
-        if (sortedOpportunities.length === 0) {
+        if (filteredOpportunities.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="opportunities-empty">No alerts match current filters</td></tr>';
+            prevPageBtn.disabled = true;
+            nextPageBtn.disabled = true;
+            pageInfo.textContent = 'Page 1';
             return;
         }
 
         // Generate table rows
         let html = '';
-        sortedOpportunities.forEach((opp, index) => {
+        paginatedOpportunities.forEach((opp, index) => {
             const isRecent = Date.now() - opp.timestamp < 5000; // Fresh for 5 seconds
             const profitClass = this.getProfitClass(opp.profit_pct);
             const timeStr = this.formatTime(opp.timestamp);
@@ -637,6 +658,9 @@ class FuturesArbitrageScanner {
         });
         
         tbody.innerHTML = html;
+        prevPageBtn.disabled = this.currentPage === 1;
+        nextPageBtn.disabled = this.currentPage === totalPages;
+        pageInfo.textContent = `Page ${this.currentPage} of ${totalPages}`;
     }
 
     getProfitClass(profitPct) {
@@ -755,6 +779,8 @@ class FuturesArbitrageScanner {
         this.exchanges.clear();
         this.priceHistory.clear();
         this.arbitrageOpportunities = [];
+        this.totalPnl = 0; // Reset PnL on symbol change
+        document.getElementById('totalPnl').textContent = `$${this.totalPnl.toFixed(2)}`;
         
         this.chartData = [[], [], [], [], [], [], []];
         if (this.chart) {
@@ -840,8 +866,6 @@ class FuturesArbitrageScanner {
             paradexValue.textContent = paradexPrice ? `$${this.formatPrice(paradexPrice)}` : '--';
         }
     }
-
-
 
     startFPSCounter() {
         const fpsCounter = document.getElementById('fpsCounter');
